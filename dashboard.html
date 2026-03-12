@@ -199,7 +199,7 @@
                 { id:'d4', initials:'FN', color:'#0891b2', name:'FinNext Ltd',         sub:'Pre-Seed · $75,000 · Contract drafted',         status:'awaiting' },
             ];
 
-            ocument.getElementById('active-deals-count').textContent = deals.length;
+            document.getElementById('active-deals-count').textContent = deals.length;
 
             document.getElementById('deals-list').innerHTML = deals.map(d => `
                 <div class="deal-row">
@@ -232,6 +232,8 @@
                 { type:'deposit',  amount:100000, to:'Nexus Wallet',       date:'2026-02-15' },
                 { type:'transfer', amount:15000,  to:'HealthAI Corp',      date:'2026-02-12' },
             ];
+
+            function cap(str) { return str.charAt(0).toUpperCase() + str.slice(1); }
 
             const txData = JSON.parse(localStorage.getItem('nexus_tx') || 'null') || txDefault;
             const recent = txData.slice(0, 4);
