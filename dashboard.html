@@ -12,6 +12,10 @@
     <nav class="navbar">
         <!-- Logo -->
         <div class="navbar-logo">
+            <!-- Hamburger (shown on tablet/mobile only) -->
+            <button class="hamburger" id="hamburger-btn" aria-label="Toggle menu">
+                <i class="fa-solid fa-bars"></i>
+            </button>
             <div class="logo-icon">
                 <i class="fa-solid fa-briefcase"></i>
             </div>
@@ -34,7 +38,10 @@
         </div>
     </nav>
 
-    <aside class="sidebar">
+    <!-- Sidebar overlay (mobile only) -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <aside class="sidebar" id="sidebar">
         <!-- Main Menu -->
         <div class="sidebar-section">
             <div class="sidebar-section-label">Main Menu</div>
@@ -176,22 +183,48 @@
 
     <script src="core.js"></script>
     <script>
+        // Hamburger / Sidebar toggle
+        const hamburgerBtn  = document.getElementById('hamburger-btn');
+        const sidebar       = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+        function openSidebar() {
+            sidebar.classList.add('open');
+            sidebarOverlay.classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeSidebar() {
+            sidebar.classList.remove('open');
+            sidebarOverlay.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        hamburgerBtn.addEventListener('click', () => {
+            sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+        });
+
+        sidebarOverlay.addEventListener('click', closeSidebar);
+
+        sidebar.querySelectorAll('.sidebar-item').forEach(item => {
+            item.addEventListener('click', () => {
+                if (window.innerWidth < 900) closeSidebar();
+            });
+        });
+
         document.addEventListener('DOMContentLoaded', () => {
             const meetings = App.meetings;
             const pending  = meetings.filter(m => m.status === 'pending');
 
-            // Update stat card
             document.getElementById('meetings-count').textContent = meetings.length;
             document.getElementById('pending-count-txt').textContent = pending.length + ' pending';
 
-            // pending alert 
             if (pending.length > 0) {
                 document.getElementById('pending-alert').style.display = 'flex';
                 document.getElementById('pending-num').textContent = pending.length;
             }
             renderMeetings();
 
-            // Deals data that is not signed yet
             const deals = [
                 { id:'d1', initials:'GT', color:'#16a34a', name:'GreenTech Startup',  sub:'Series A · $500,000 · Term Sheet sent',        status:'awaiting' },
                 { id:'d2', initials:'HA', color:'#2563eb', name:'HealthAI Corp',       sub:'Seed Round · $150,000 · NDA pending',           status:'awaiting' },
@@ -219,13 +252,11 @@
                 </div>
             `).join('');
 
-            // Wallet balance from localStorage ─────────────────
             const savedBal = parseFloat(localStorage.getItem('nexus_balance') || '247500');
             const balFmt   = '$' + savedBal.toLocaleString('en-US');
             document.getElementById('wallet-display').textContent = balFmt;
             document.getElementById('stat-balance').textContent   = balFmt;
 
-            // ── Recent Transactions ───────────────────────────────
             const txDefault = [
                 { type:'deposit',  amount:50000,  to:'Nexus Wallet',      date:'2026-02-18' },
                 { type:'transfer', amount:25000,  to:'GreenTech Startup',  date:'2026-02-17' },
@@ -254,7 +285,6 @@
             `).join('');
         });
 
-        // Render meetings list
         function renderMeetings() {
             const list = document.getElementById('meetings-list');
             const show = App.meetings.slice(0, 5);
@@ -265,41 +295,39 @@
                 const isPending = m.status === 'pending';
 
                 const right = isPending
-                    ?  `<div class="meeting-actions">
+                    ? `<div class="meeting-actions">
                             <button class="btn-accept"  onclick="acceptMeeting(${m.id})"><i class="fa-solid fa-check"></i> Accept</button>
                             <button class="btn-decline" onclick="declineMeeting(${m.id})"><i class="fa-solid fa-xmark"></i> Decline</button>
                         </div>`
                     : `<span class="badge-confirmed">✓ Confirmed</span>`;
-                    return `
-                    <div class="meeting-item" id="meeting-row-${m.id}">
-                        <div class="meeting-date-box">
-                            <div class="mday">${parts[2]}</div>
-                            <div class="mmon">${monthName}</div>
-                        </div>
-                        <div style="flex:1;min-width:0">
-                            <div style="font-weight:600;font-size:14px">${m.title}</div>
-                            <div style="font-size:12px;color:#6b7280;margin-top:3px">with ${m.with} · ${m.time}</div>
-                        </div>
-                        ${right}
-                    </div>`;
-            }).join('');
-        };
 
-        // Accept meeting 
+                return `
+                <div class="meeting-item" id="meeting-row-${m.id}">
+                    <div class="meeting-date-box">
+                        <div class="mday">${parts[2]}</div>
+                        <div class="mmon">${monthName}</div>
+                    </div>
+                    <div style="flex:1;min-width:0">
+                        <div style="font-weight:600;font-size:14px">${m.title}</div>
+                        <div style="font-size:12px;color:#6b7280;margin-top:3px">with ${m.with} · ${m.time}</div>
+                    </div>
+                    ${right}
+                </div>`;
+            }).join('');
+        }
+
         function acceptMeeting(id) {
-        const m = App.meetings.find(x => x.id === id);
+            const m = App.meetings.find(x => x.id === id);
             if (m) m.status = 'confirmed';
 
             const row     = document.getElementById('meeting-row-' + id);
             const actions = row.querySelector('.meeting-actions');
             if (actions) actions.outerHTML = `<span class="badge-confirmed">✓ Confirmed</span>`;
 
-            // Update pending counter
             updatePendingAlert();
             showToast('Meeting accepted!', 'success');
         }
 
-        // Decline meeting 
         function declineMeeting(id) {
             const m = App.meetings.find(x => x.id === id);
             if (m) m.status = 'declined';
